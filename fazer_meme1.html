@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Meme with Canvas</title>
+    <style>
+        body { display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #container { display: flex; justify-content: center; align-items: flex-start; }
+        #inputForm { display: flex; flex-direction: column; margin-right: 20px; }
+        canvas { border: 1px solid black; max-height: 90vh; }
+        p {margin-bottom: 2px;}
+        .topText {margin-top: 0px;}
+        .topTextoutro {margin-top: 2px;}
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="inputForm">
+            <p class="topTextoutro">Caminho da Imagem no computador:</p>
+            <input type="file" id="imagePath" accept="image/*">
+            <p class="topTextoutro">Texto da parte superior:</p>
+            <input id="topText" type="text" placeholder="Enter top text" size="50" style="margin-bottom: 10px;">
+            <p class="topText">Posição vertical do texto superior:</p>
+            <input id="topTextY" type="range" min="0" max="100" value="15" style="margin-bottom: 10px;">
+            <p class="topTextoutro">Texto da parte inferior:</p>
+            <input id="bottomText" type="text" placeholder="Enter bottom text" style="margin-bottom: 10px;">
+            <p class="topText">Posição vertical do texto inferior:</p>
+            <input id="bottomTextY" type="range" min="0" max="110" value="103" style="margin-bottom: 10px;">
+            <p class="topTextoutro">Tamanho da fonte:</p>
+            <input id="fontSize" type="number" placeholder="Enter font size (default 100)" style="margin-bottom: 15px;">
+            <button onclick="loadImage()">Generate Meme</button>
+        </div>
+        <canvas id="memeCanvas"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById('memeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function loadImage() {
+    const imageFile = document.getElementById('imagePath').files[0]; // Pega o arquivo de imagem
+    const topText = document.getElementById('topText').value.toUpperCase();
+    const bottomText = document.getElementById('bottomText').value.toUpperCase();
+    const fontSize = document.getElementById('fontSize').value || 100;
+    const topTextY = parseInt(document.getElementById('topTextY').value, 10) / 100; // Convert percentage to a scale
+    const bottomTextY = parseInt(document.getElementById('bottomTextY').value, 10) / 100; // Convert percentage to a scale
+
+    if (!imageFile) {
+        alert('Please select an image file.');
+        return;
+    }
+
+    const image = new Image();
+    image.src = URL.createObjectURL(imageFile); // Cria um URL para o arquivo de imagem
+    image.onload = () => {
+        let scale = Math.min(window.innerWidth / image.width, window.innerHeight * 2.5 / image.height, 1); // Adjust scale to fit the viewport
+        canvas.width = image.width * scale;
+        canvas.height = image.height * scale;
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        drawText(topText, canvas.height * topTextY, true, fontSize, scale);
+        drawText(bottomText, canvas.height * bottomTextY, false, fontSize, scale);
+    };
+    image.onerror = () => {
+        alert('Failed to load image. Please check the file and try again.');
+    };
+}
+
+        function drawText(text, y, isTop, fontSize, scale) {
+            const maxWidth = canvas.width * 0.8;
+            const lineHeight = parseInt(fontSize) * scale + 12;
+            const x = canvas.width / 2;
+            ctx.font = `${parseInt(fontSize) * scale}px impact`;
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.lineWidth = 5 * scale;
+
+            let words = text.split(' ');
+            let line = '';
+            let lines = [];
+
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = ctx.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+
+            for (let index = 0; index < lines.length; index++) {
+                let lineY = isTop ? y + lineHeight * index : y - lineHeight * (lines.length - index);
+                ctx.strokeText(lines[index], x, lineY);
+                ctx.fillText(lines[index], x, lineY);
+            }
+        }
+    </script>
+</body>
+</html>

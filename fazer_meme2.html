@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Meme Generator</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #controlPanel {
+            margin-right: 20px;
+        }
+        #memeCanvas {
+            border: 1px solid black;
+            max-height: 90vh;
+            max-width: 80vw;
+        }
+        p {
+            margin-bottom: 0px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controlPanel">
+        <input type="file" id="imageInput" accept="image/*">
+        <br>
+        <p>Texto da parte superior:</p>
+        <textarea id="topText" placeholder="Insira o texto aqui" rows="4" cols="50"></textarea>
+        <br>
+        <p>Tamanho da fonte:</p>
+        <input type="number" id="fontSize" value="20" min="10" max="300" step="2" title="Font Size">
+        <br>
+        <p>Posição na vertical do texto:</p>
+        <input type="range" id="textVerticalPosition" value="22" min="0" max="50" step="1" title="Vertical Position">
+        <br>
+        <p>Ocupação horizontal do texto:</p>
+        <input type="range" id="textWidthPercent" value="45" min="10" max="100" step="1" title="Text Width Percentage">
+        <br>
+        <p>Espaço da área branca:</p>
+        <input type="range" id="extraSpace" value="10" min="0" max="100" step="5" title="Extra Space">
+        <br>
+        <button onclick="generateMeme()">Gerar Meme</button>
+    </div>
+    <canvas id="memeCanvas"></canvas>
+
+    <script>
+        function generateMeme() {
+            const canvas = document.getElementById('memeCanvas');
+            const ctx = canvas.getContext('2d');
+            const imageInput = document.getElementById('imageInput');
+            const topText = document.getElementById('topText').value.toUpperCase();
+            const fontSize = document.getElementById('fontSize').value;
+            const verticalPosition = document.getElementById('textVerticalPosition').value;
+            const textWidthPercent = document.getElementById('textWidthPercent').value;
+            const extraSpace = document.getElementById('extraSpace').value;
+
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const scale = Math.min(window.innerWidth / img.width, window.innerHeight *2.5 / img.height, 1);
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
+
+                        const maxWidth = canvas.width * (textWidthPercent / 100);
+                        const lines = wrapText(ctx, topText, maxWidth);
+                        const textHeight = lines.length * (parseInt(fontSize, 10) + 10) + parseInt(extraSpace, 10);
+
+                        canvas.height += textHeight;
+
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, canvas.width, textHeight);
+
+                        ctx.fillStyle = 'black';
+                        ctx.font = `${fontSize}px impact`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        lines.forEach((line, index) => {
+                            ctx.fillText(line, canvas.width / 2, parseInt(verticalPosition, 10) + index * (parseInt(fontSize, 10) + 10));
+                        });
+
+                        ctx.drawImage(img, 0, textHeight, canvas.width, img.height * scale);
+                    };
+                    img.src = e.target.result;
+                };
+
+                reader.readAsDataURL(imageInput.files[0]);
+            }
+        }
+
+        function wrapText(context, text, maxWidth) {
+            let words = text.split(' ');
+            let lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                let testLine = currentLine + ' ' + words[i];
+                let metrics = context.measureText(testLine);
+                if (metrics.width > maxWidth) {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        document.getElementById('imageInput').addEventListener('change', generateMeme);
+    </script>    
+</body>
+</html>
